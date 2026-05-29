@@ -9,6 +9,15 @@ import { useRoomSocket } from "@/lib/hooks/useRoomSocket";
 
 const fallbackMaxSeekSeconds = 4 * 60 * 60;
 
+type ProviderStatus = {
+  detected: boolean;
+  url: string;
+  currentTime: number | null;
+  duration: number | null;
+  paused: boolean | null;
+  updatedAt: number;
+};
+
 function formatTimestamp(seconds: number) {
   const safeSeconds = Math.max(0, Math.floor(seconds));
   const hours = Math.floor(safeSeconds / 3600);
@@ -20,6 +29,19 @@ function formatTimestamp(seconds: number) {
   }
 
   return `${minutes}:${String(remainingSeconds).padStart(2, "0")}`;
+}
+
+function sendProviderCommand(action: "play" | "pause" | "seek", currentTime: number) {
+  window.postMessage(
+    {
+      type: "WATCHPARTY_PROVIDER_COMMAND",
+      command: {
+        action,
+        currentTime,
+      },
+    },
+    window.location.origin
+  );
 }
 
 export function RoomClient({
@@ -45,17 +67,45 @@ export function RoomClient({
   const [sourceError, setSourceError] = useState("");
   const [isSavingSource, setIsSavingSource] = useState(false);
   const [duration, setDuration] = useState(fallbackMaxSeekSeconds);
+  const [providerStatus, setProviderStatus] = useState<ProviderStatus | null>(null);
+  const [isExtensionBridgeReady, setIsExtensionBridgeReady] = useState(false);
   const shareUrl = useMemo(() => {
     if (typeof window === "undefined") return `/room/${roomCode}`;
     return `${window.location.origin}/room/${roomCode}`;
   }, [roomCode]);
   const displayTime = formatTimestamp(time);
   const displayDuration = formatTimestamp(duration);
+  const canControlPlayback = room.isConnected && (Boolean(room.videoSource?.videoUrl) || Boolean(providerStatus?.detected));
 
   useEffect(() => {
     const timeout = window.setTimeout(() => setDisplayName(room.name), 0);
     return () => window.clearTimeout(timeout);
   }, [room.name]);
+
+  useEffect(() => {
+    function handleProviderStatus(event: MessageEvent) {
+      if (event.source !== window) return;
+      if (event.data?.type === "WATCHPARTY_EXTENSION_BRIDGE_READY") {
+        setIsExtensionBridgeReady(true);
+        return;
+      }
+
+      if (event.data?.type !== "WATCHPARTY_PROVIDER_STATUS") return;
+
+      setProviderStatus(event.data.status);
+    }
+
+    window.addEventListener("message", handleProviderStatus);
+    const interval = window.setInterval(() => {
+      window.postMessage({ type: "WATCHPARTY_GET_PROVIDER_STATUS" }, window.location.origin);
+    }, 1500);
+    window.postMessage({ type: "WATCHPARTY_GET_PROVIDER_STATUS" }, window.location.origin);
+
+    return () => {
+      window.clearInterval(interval);
+      window.removeEventListener("message", handleProviderStatus);
+    };
+  }, []);
 
   const updateTime = useCallback(
     (nextTime: number) => {
@@ -70,8 +120,18 @@ export function RoomClient({
   }, [room.playback.currentTime, updateTime]);
 
   useEffect(() => {
+    if (room.playback.updatedBy === room.name) return;
+
+    if (room.playback.status === "playing") {
+      sendProviderCommand("play", room.playback.currentTime);
+    } else if (room.playback.status === "paused") {
+      sendProviderCommand("pause", room.playback.currentTime);
+    } else {
+      sendProviderCommand("seek", room.playback.currentTime);
+    }
+
     const video = videoRef.current;
-    if (!video || room.playback.updatedBy === room.name) return;
+    if (!video) return;
 
     isApplyingRemotePlayback.current = true;
     if (Math.abs(video.currentTime - room.playback.currentTime) > 0.75) {
@@ -141,10 +201,12 @@ export function RoomClient({
     if (video) {
       video.currentTime = time;
       void video.play();
+      sendProviderCommand("play", video.currentTime);
       room.play(video.currentTime);
       return;
     }
 
+    sendProviderCommand("play", time);
     room.play(time);
   }
 
@@ -152,10 +214,12 @@ export function RoomClient({
     const video = videoRef.current;
     if (video) {
       video.pause();
+      sendProviderCommand("pause", video.currentTime);
       room.pause(video.currentTime);
       return;
     }
 
+    sendProviderCommand("pause", time);
     room.pause(time);
   }
 
@@ -165,6 +229,7 @@ export function RoomClient({
       video.currentTime = time;
     }
 
+    sendProviderCommand("seek", time);
     room.seek(time);
   }
 
@@ -185,6 +250,17 @@ export function RoomClient({
                 aria-hidden
               />
               {room.isConnected ? "Connected" : "Connecting"}
+            </div>
+            <div className="flex items-center gap-2 rounded-md border border-line bg-mist px-3 py-2 text-sm font-medium text-slate-700">
+              <span
+                className={providerStatus?.detected ? "h-2.5 w-2.5 rounded-full bg-fern" : "h-2.5 w-2.5 rounded-full bg-gold"}
+                aria-hidden
+              />
+              {providerStatus?.detected
+                ? "Provider detected"
+                : isExtensionBridgeReady
+                  ? "Provider not detected"
+                  : "Extension not connected"}
             </div>
             <Button
               type="button"
@@ -247,17 +323,20 @@ export function RoomClient({
                 }}
                 onPlay={(event) => {
                   if (!isApplyingRemotePlayback.current) {
+                    sendProviderCommand("play", event.currentTarget.currentTime);
                     room.play(event.currentTarget.currentTime);
                   }
                 }}
                 onPause={(event) => {
                   if (!isApplyingRemotePlayback.current) {
+                    sendProviderCommand("pause", event.currentTarget.currentTime);
                     room.pause(event.currentTarget.currentTime);
                   }
                 }}
                 onSeeked={(event) => {
                   if (!isApplyingRemotePlayback.current) {
                     updateTime(event.currentTarget.currentTime);
+                    sendProviderCommand("seek", event.currentTarget.currentTime);
                     room.seek(event.currentTarget.currentTime);
                   }
                 }}
@@ -320,15 +399,15 @@ export function RoomClient({
           </div>
 
           <div className="mt-5 grid gap-3 md:grid-cols-[1fr_1fr_1fr]">
-            <Button type="button" onClick={playVideo} disabled={!room.isConnected || !room.videoSource?.videoUrl}>
+            <Button type="button" onClick={playVideo} disabled={!canControlPlayback}>
               <Play className="h-4 w-4" aria-hidden />
               Play
             </Button>
-            <Button type="button" variant="secondary" onClick={pauseVideo} disabled={!room.isConnected || !room.videoSource?.videoUrl}>
+            <Button type="button" variant="secondary" onClick={pauseVideo} disabled={!canControlPlayback}>
               <Pause className="h-4 w-4" aria-hidden />
               Pause
             </Button>
-            <Button type="button" variant="secondary" onClick={seekVideo} disabled={!room.isConnected || !room.videoSource?.videoUrl}>
+            <Button type="button" variant="secondary" onClick={seekVideo} disabled={!canControlPlayback}>
               <SkipForward className="h-4 w-4" aria-hidden />
               Seek to {displayTime}
             </Button>

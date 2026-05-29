@@ -21,6 +21,7 @@ MVP skeleton sudah berjalan secara lokal.
 - [x] Shared in-room HTML5 video player
 - [x] Realtime video source sync
 - [x] Rename participant display name
+- [x] Browser extension scaffold for external HTML5 provider sync
 - [x] Prisma schema for `User`, `Room`, and Better Auth models
 - [x] Better Auth email/password route handler
 - [x] Better Auth database migration applied
@@ -171,10 +172,10 @@ Manual test notes:
 
 ### Version 3
 
-- [ ] Browser extension scaffold
-- [ ] Detect active video provider
+- [x] Browser extension scaffold
+- [x] Detect active video provider
 - [ ] Read provider video current time
-- [ ] Control provider play/pause/seek
+- [x] Control provider play/pause/seek
 - [ ] Extension-to-webapp auth/session pairing
 
 Target providers:
@@ -183,6 +184,7 @@ Target providers:
 - [ ] Disney+
 - [ ] Prime Video
 - [ ] Vidio
+- [x] Generic HTML5 provider tab for `z2.idlixku.com`
 
 ### Version 4
 

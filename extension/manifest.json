@@ -1,0 +1,39 @@
+{
+  "manifest_version": 3,
+  "name": "WatchParty Provider Sync",
+  "version": "0.1.0",
+  "description": "Controls a browser-playable HTML5 video tab from WatchParty room sync events.",
+  "permissions": ["tabs"],
+  "host_permissions": [
+    "http://localhost/*",
+    "http://127.0.0.1/*",
+    "http://idlixku.com/*",
+    "https://idlixku.com/*",
+    "http://*.idlixku.com/*",
+    "https://*.idlixku.com/*"
+  ],
+  "background": {
+    "service_worker": "background.js"
+  },
+  "content_scripts": [
+    {
+      "matches": [
+        "http://localhost/*",
+        "http://127.0.0.1/*"
+      ],
+      "js": ["watchparty-bridge.js"],
+      "run_at": "document_start"
+    },
+    {
+      "matches": [
+        "http://idlixku.com/*",
+        "https://idlixku.com/*",
+        "http://*.idlixku.com/*",
+        "https://*.idlixku.com/*"
+      ],
+      "js": ["html5-provider.js"],
+      "run_at": "document_idle",
+      "all_frames": true
+    }
+  ]
+}

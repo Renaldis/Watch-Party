@@ -1,10 +1,26 @@
 import Link from "next/link";
 import { Clapperboard } from "lucide-react";
 import { RoomClient } from "@/components/room/RoomClient";
+import { prisma } from "@/lib/prisma";
+import { RoomNotFound } from "./not-found";
 
 export default async function RoomPage({ params }: { params: Promise<{ code: string }> }) {
   const { code } = await params;
   const roomCode = code.toUpperCase();
+  const room = await prisma.room.findUnique({
+    where: { code: roomCode },
+    include: {
+      owner: {
+        select: {
+          name: true,
+        },
+      },
+    },
+  });
+
+  if (!room) {
+    return <RoomNotFound />;
+  }
 
   return (
     <main className="min-h-screen px-5 py-5">
@@ -17,6 +33,9 @@ export default async function RoomPage({ params }: { params: Promise<{ code: str
           Room {roomCode}
         </span>
       </nav>
+      <div className="mx-auto mb-4 w-full max-w-7xl text-sm text-slate-600">
+        Hosted by <span className="font-semibold text-ink">{room.owner.name}</span>
+      </div>
       <RoomClient roomCode={roomCode} />
     </main>
   );

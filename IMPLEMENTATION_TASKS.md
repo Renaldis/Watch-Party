@@ -27,7 +27,7 @@ MVP skeleton sudah berjalan secara lokal.
 ## Important Notes
 
 - Auth UI sudah terhubung ke Better Auth untuk register, login, session check, dan logout.
-- Room creation saat ini masih client-side random code, belum tersimpan ke database.
+- Room creation sudah lewat API, membutuhkan login, dan tersimpan ke database.
 - Presence, chat, dan playback state masih in-memory di Socket.IO server.
 - In-memory realtime state sudah sesuai MVP principle, tapi akan reset saat server restart.
 - Aplikasi memakai custom `server.js` supaya Socket.IO bisa berjalan bersama Next.js.
@@ -56,12 +56,12 @@ Acceptance criteria:
 
 ### 2. Database Room System
 
-- [ ] Buat API/action untuk create room
-- [ ] Simpan room ke PostgreSQL lewat Prisma
-- [ ] Pastikan room code unique
-- [ ] Validasi room exists saat membuka `/room/[code]`
-- [ ] Hubungkan owner room dengan logged-in user
-- [ ] Tambahkan empty/error state untuk room yang tidak ditemukan
+- [x] Buat API/action untuk create room
+- [x] Simpan room ke PostgreSQL lewat Prisma
+- [x] Pastikan room code unique
+- [x] Validasi room exists saat membuka `/room/[code]`
+- [x] Hubungkan owner room dengan logged-in user
+- [x] Tambahkan empty/error state untuk room yang tidak ditemukan
 
 Acceptance criteria:
 
@@ -117,8 +117,8 @@ Acceptance criteria:
 - [x] User dapat register
 - [x] User dapat login
 - [x] User dapat logout
-- [ ] User dapat membuat room
-- [ ] Room tersimpan di database
+- [x] User dapat membuat room
+- [x] Room tersimpan di database
 - [x] User dapat join room lewat URL
 - [x] Dua browser dapat masuk room yang sama secara realtime
 - [x] Peserta online tampil
@@ -126,7 +126,7 @@ Acceptance criteria:
 - [x] Play tersinkron
 - [x] Pause tersinkron
 - [x] Seek tersinkron
-- [ ] Basic validation dan error state tersedia
+- [x] Basic validation dan error state tersedia
 - [ ] MVP tested manual dengan dua browser
 
 ## Recommended Implementation Order
@@ -184,11 +184,14 @@ interface ProviderAdapter {
 }
 ```
 
+## Resolved Technical Debt
+
+- [x] Room creation belum menggunakan session user
+- [x] Room code generation is client-side
+- [x] No database-backed room validation yet
+
 ## Known Technical Debt
 
-- [ ] Room creation belum menggunakan session user
-- [ ] Room code generation is client-side
-- [ ] No database-backed room validation yet
 - [ ] Socket server stores state in memory only
 - [ ] No automated tests yet
 - [ ] No deployment config yet

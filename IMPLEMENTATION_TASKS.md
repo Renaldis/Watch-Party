@@ -86,12 +86,12 @@ Acceptance criteria:
 
 ### 4. Playback UX
 
-- [ ] Tambahkan current time input yang lebih nyaman
-- [ ] Tambahkan slider seek
+- [x] Tambahkan current time input yang lebih nyaman
+- [x] Tambahkan slider seek
 - [x] Tampilkan status event terakhir
 - [x] Tampilkan siapa yang mengirim sync terakhir
-- [ ] Tambahkan manual drift correction hint
-- [ ] Tambahkan local optimistic update yang konsisten
+- [x] Tambahkan manual drift correction hint
+- [x] Tambahkan local optimistic update yang konsisten
 
 Acceptance criteria:
 
@@ -100,10 +100,10 @@ Acceptance criteria:
 
 ### 5. UI Polish
 
-- [ ] Rapikan mobile layout room page
+- [x] Rapikan mobile layout room page
 - [ ] Tambahkan loading states
 - [x] Tambahkan disabled states
-- [ ] Tambahkan copy link success feedback
+- [x] Tambahkan copy link success feedback
 - [x] Tambahkan not-found room page
 - [x] Tambahkan navbar state saat logged in
 

@@ -71,12 +71,12 @@ Acceptance criteria:
 
 ### 3. Realtime Hardening
 
-- [ ] Validasi payload Socket.IO dengan Zod
-- [ ] Batasi panjang chat message
-- [ ] Batasi room code format
-- [ ] Tambahkan server-side participant cleanup
-- [ ] Tambahkan basic rate limit untuk chat
-- [ ] Tambahkan event error untuk invalid room
+- [x] Validasi payload Socket.IO dengan Zod
+- [x] Batasi panjang chat message
+- [x] Batasi room code format
+- [x] Tambahkan server-side participant cleanup
+- [x] Tambahkan basic rate limit untuk chat
+- [x] Tambahkan event error untuk invalid room
 
 Acceptance criteria:
 
@@ -88,8 +88,8 @@ Acceptance criteria:
 
 - [ ] Tambahkan current time input yang lebih nyaman
 - [ ] Tambahkan slider seek
-- [ ] Tampilkan status event terakhir
-- [ ] Tampilkan siapa yang mengirim sync terakhir
+- [x] Tampilkan status event terakhir
+- [x] Tampilkan siapa yang mengirim sync terakhir
 - [ ] Tambahkan manual drift correction hint
 - [ ] Tambahkan local optimistic update yang konsisten
 
@@ -102,9 +102,9 @@ Acceptance criteria:
 
 - [ ] Rapikan mobile layout room page
 - [ ] Tambahkan loading states
-- [ ] Tambahkan disabled states
+- [x] Tambahkan disabled states
 - [ ] Tambahkan copy link success feedback
-- [ ] Tambahkan not-found room page
+- [x] Tambahkan not-found room page
 - [x] Tambahkan navbar state saat logged in
 
 Acceptance criteria:

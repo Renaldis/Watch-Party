@@ -10,21 +10,36 @@ export type PlaybackState = {
 };
 
 export function useRoomSocket(roomCode: string) {
+  const socket = useMemo(() => getSocket(), []);
   const [name] = useState(() => `Guest ${Math.floor(100 + Math.random() * 900)}`);
   const [participants, setParticipants] = useState<Participant[]>([]);
   const [messages, setMessages] = useState<ChatMessage[]>([]);
+  const [error, setError] = useState("");
+  const [isConnected, setIsConnected] = useState(() => socket.connected);
   const [playback, setPlayback] = useState<PlaybackState>({
     status: "idle",
     currentTime: 0,
     updatedBy: "system",
   });
-  const socket = useMemo(() => getSocket(), []);
 
   useEffect(() => {
     socket.connect();
-    socket.emit("join-room", { roomCode, name });
+    if (socket.connected) {
+      socket.emit("join-room", { roomCode, name });
+    }
 
+    socket.on("connect", () => {
+      setIsConnected(true);
+      setError("");
+      socket.emit("join-room", { roomCode, name });
+    });
+    socket.on("disconnect", () => {
+      setIsConnected(false);
+    });
     socket.on("participants", setParticipants);
+    socket.on("room-error", (payload: { message: string }) => {
+      setError(payload.message);
+    });
     socket.on("chat-message", (message: ChatMessage) => {
       setMessages((current) => [...current, message]);
     });
@@ -44,7 +59,10 @@ export function useRoomSocket(roomCode: string) {
 
     return () => {
       socket.emit("leave-room", { roomCode });
+      socket.off("connect");
+      socket.off("disconnect");
       socket.off("participants");
+      socket.off("room-error");
       socket.off("chat-message");
       socket.off("play");
       socket.off("pause");
@@ -56,6 +74,8 @@ export function useRoomSocket(roomCode: string) {
     name,
     participants,
     messages,
+    error,
+    isConnected,
     playback,
     sendMessage(message: string) {
       socket.emit("chat-message", { roomCode, message, senderName: name });

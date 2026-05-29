@@ -26,6 +26,13 @@ export function RoomClient({ roomCode }: { roomCode: string }) {
                 Last update: {room.playback.updatedBy} at {Math.round(room.playback.currentTime)}s
               </p>
             </div>
+            <div className="flex items-center gap-2 rounded-md border border-line bg-mist px-3 py-2 text-sm font-medium text-slate-700">
+              <span
+                className={room.isConnected ? "h-2.5 w-2.5 rounded-full bg-fern" : "h-2.5 w-2.5 rounded-full bg-coral"}
+                aria-hidden
+              />
+              {room.isConnected ? "Connected" : "Connecting"}
+            </div>
             <Button
               type="button"
               variant="secondary"
@@ -35,6 +42,11 @@ export function RoomClient({ roomCode }: { roomCode: string }) {
               Copy link
             </Button>
           </div>
+          {room.error ? (
+            <p className="mt-4 rounded-md border border-red-100 bg-red-50 px-3 py-2 text-sm text-red-700">
+              {room.error}
+            </p>
+          ) : null}
 
           <div className="mt-6 aspect-video w-full rounded-lg border border-line bg-[#20252b] p-5 text-white">
             <div className="flex h-full flex-col items-center justify-center gap-4 text-center">
@@ -55,11 +67,11 @@ export function RoomClient({ roomCode }: { roomCode: string }) {
           </div>
 
           <div className="mt-5 grid gap-3 md:grid-cols-[auto_auto_1fr_auto]">
-            <Button type="button" onClick={() => room.play(time)}>
+            <Button type="button" onClick={() => room.play(time)} disabled={!room.isConnected}>
               <Play className="h-4 w-4" aria-hidden />
               Play
             </Button>
-            <Button type="button" variant="secondary" onClick={() => room.pause(time)}>
+            <Button type="button" variant="secondary" onClick={() => room.pause(time)} disabled={!room.isConnected}>
               <Pause className="h-4 w-4" aria-hidden />
               Pause
             </Button>
@@ -70,7 +82,7 @@ export function RoomClient({ roomCode }: { roomCode: string }) {
               value={time}
               onChange={(event) => setTime(Number(event.target.value))}
             />
-            <Button type="button" variant="secondary" onClick={() => room.seek(time)}>
+            <Button type="button" variant="secondary" onClick={() => room.seek(time)} disabled={!room.isConnected}>
               <SkipForward className="h-4 w-4" aria-hidden />
               Seek
             </Button>
@@ -114,7 +126,7 @@ export function RoomClient({ roomCode }: { roomCode: string }) {
               onChange={(event) => setMessage(event.target.value)}
               placeholder="Type a message"
             />
-            <Button type="submit">
+            <Button type="submit" disabled={!room.isConnected}>
               <Send className="h-4 w-4" aria-hidden />
               Send
             </Button>

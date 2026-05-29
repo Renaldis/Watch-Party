@@ -16,6 +16,7 @@ MVP skeleton sudah berjalan secara lokal.
 - [x] Realtime Socket.IO server
 - [x] Room presence in memory
 - [x] Realtime chat in memory
+- [x] Active-room in-memory chat history
 - [x] Playback sync events: play, pause, seek
 - [x] Shared in-room HTML5 video player
 - [x] Realtime video source sync
@@ -34,6 +35,7 @@ MVP skeleton sudah berjalan secara lokal.
 - Presence, chat, dan playback state masih in-memory di Socket.IO server.
 - Video source room disimpan di database, tapi file/video tetap berasal dari URL eksternal yang browser boleh putar.
 - In-memory realtime state sudah sesuai MVP principle, tapi akan reset saat server restart.
+- Chat history disimpan in-memory selama room masih punya peserta aktif, lalu dibersihkan saat room kosong.
 - Aplikasi memakai custom `server.js` supaya Socket.IO bisa berjalan bersama Next.js.
 - Migration `20260529035800_add_better_auth_models` sudah diterapkan ke database Neon.
 
@@ -81,6 +83,8 @@ Acceptance criteria:
 - [x] Tambahkan server-side participant cleanup
 - [x] Tambahkan basic rate limit untuk chat
 - [x] Tambahkan event error untuk invalid room
+- [x] Tambahkan chat history in-memory selama room aktif
+- [x] Bersihkan runtime room state saat peserta terakhir keluar
 
 Acceptance criteria:
 
@@ -130,6 +134,7 @@ Acceptance criteria:
 - [x] Dua browser dapat masuk room yang sama secara realtime
 - [x] Peserta online tampil
 - [x] Chat realtime berjalan
+- [x] Chat history tetap ada setelah refresh selama room aktif
 - [x] Play tersinkron
 - [x] Pause tersinkron
 - [x] Seek tersinkron
@@ -207,6 +212,7 @@ interface ProviderAdapter {
 ## Known Technical Debt
 
 - [ ] Socket server stores state in memory only
+- [ ] Chat history is not persisted after room is empty or server restarts
 - [ ] No automated tests yet
 - [ ] No deployment config yet
 - [ ] No production auth/session security review yet

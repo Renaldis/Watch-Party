@@ -9,6 +9,7 @@ export type ChatMessage = {
   id: string;
   roomCode: string;
   senderId: string;
+  senderClientId: string;
   senderName: string;
   message: string;
   timestamp: string;
@@ -16,6 +17,7 @@ export type ChatMessage = {
 
 export type Participant = {
   id: string;
+  clientId: string;
   name: string;
 };
 

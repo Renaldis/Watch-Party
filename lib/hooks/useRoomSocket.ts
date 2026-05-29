@@ -23,6 +23,18 @@ export function useRoomSocket(
   }
 ) {
   const socket = useMemo(() => getSocket(), []);
+  const [clientId] = useState(() => {
+    if (typeof window === "undefined") {
+      return crypto.randomUUID();
+    }
+
+    const existingClientId = window.localStorage.getItem("watchparty-client-id");
+    if (existingClientId) return existingClientId;
+
+    const nextClientId = crypto.randomUUID();
+    window.localStorage.setItem("watchparty-client-id", nextClientId);
+    return nextClientId;
+  });
   const [name, setName] = useState(() => {
     if (typeof window === "undefined") {
       return `Guest ${Math.floor(100 + Math.random() * 900)}`;
@@ -52,13 +64,13 @@ export function useRoomSocket(
   useEffect(() => {
     socket.connect();
     if (socket.connected) {
-      socket.emit("join-room", { roomCode, name });
+      socket.emit("join-room", { roomCode, name, clientId });
     }
 
     socket.on("connect", () => {
       setIsConnected(true);
       setError("");
-      socket.emit("join-room", { roomCode, name });
+      socket.emit("join-room", { roomCode, name, clientId });
     });
     socket.on("disconnect", () => {
       setIsConnected(false);
@@ -66,6 +78,9 @@ export function useRoomSocket(
     socket.on("participants", setParticipants);
     socket.on("room-error", (payload: { message: string }) => {
       setError(payload.message);
+    });
+    socket.on("chat-history", (history: ChatMessage[]) => {
+      setMessages(history);
     });
     socket.on("chat-message", (message: ChatMessage) => {
       setMessages((current) => [...current, message]);
@@ -100,16 +115,18 @@ export function useRoomSocket(
       socket.off("disconnect");
       socket.off("participants");
       socket.off("room-error");
+      socket.off("chat-history");
       socket.off("chat-message");
       socket.off("play");
       socket.off("pause");
       socket.off("seek");
       socket.off("video-source");
     };
-  }, [name, roomCode, socket]);
+  }, [clientId, name, roomCode, socket]);
 
   return {
     socketId: socket.id,
+    clientId,
     name,
     participants,
     messages,
@@ -123,25 +140,30 @@ export function useRoomSocket(
 
       window.localStorage.setItem("watchparty-display-name", cleanName);
       setName(cleanName);
-      socket.emit("join-room", { roomCode, name: cleanName });
+      socket.emit("join-room", { roomCode, name: cleanName, clientId });
     },
     sendMessage(message: string) {
-      socket.emit("chat-message", { roomCode, message, senderName: name });
+      socket.emit("chat-message", { roomCode, message, senderName: name, senderClientId: clientId });
+    },
+    leaveRoom() {
+      socket.emit("leave-room", { roomCode });
+      setParticipants([]);
+      setMessages([]);
     },
     setVideoSource(videoUrl: string, videoTitle: string | null) {
-      socket.emit("video-source", { roomCode, videoUrl, videoTitle, senderName: name });
+      socket.emit("video-source", { roomCode, videoUrl, videoTitle, senderName: name, senderClientId: clientId });
       setVideoSource({ videoUrl, videoTitle, updatedBy: name });
     },
     play(currentTime: number) {
-      socket.emit("play", { roomCode, currentTime, senderName: name });
+      socket.emit("play", { roomCode, currentTime, senderName: name, senderClientId: clientId });
       setPlayback({ status: "playing", currentTime, updatedBy: name });
     },
     pause(currentTime: number) {
-      socket.emit("pause", { roomCode, currentTime, senderName: name });
+      socket.emit("pause", { roomCode, currentTime, senderName: name, senderClientId: clientId });
       setPlayback({ status: "paused", currentTime, updatedBy: name });
     },
     seek(currentTime: number) {
-      socket.emit("seek", { roomCode, currentTime, senderName: name });
+      socket.emit("seek", { roomCode, currentTime, senderName: name, senderClientId: clientId });
       setPlayback((current) => ({ ...current, currentTime, updatedBy: name }));
     },
   };

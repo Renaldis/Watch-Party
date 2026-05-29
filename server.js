@@ -13,17 +13,21 @@ const handle = app.getRequestHandler();
 const prisma = new PrismaClient();
 
 const rooms = new Map();
+const roomMessages = new Map();
 const chatRateLimits = new Map();
+const maxRoomMessages = 100;
 
 const roomCodeSchema = z.string().trim().toUpperCase().regex(/^[A-Z0-9]{4,10}$/);
 const joinRoomSchema = z.object({
   roomCode: roomCodeSchema,
   name: z.string().trim().min(1).max(40).default("Guest"),
+  clientId: z.string().trim().min(8).max(80),
 });
 const chatMessageSchema = z.object({
   roomCode: roomCodeSchema,
   message: z.string().trim().min(1).max(500),
   senderName: z.string().trim().min(1).max(40).default("Guest"),
+  senderClientId: z.string().trim().min(8).max(80),
 });
 const playbackSchema = z.object({
   roomCode: roomCodeSchema,
@@ -61,6 +65,7 @@ function removeParticipant(io, socket) {
 
   if (room.size === 0) {
     rooms.delete(roomCode);
+    roomMessages.delete(roomCode);
   } else {
     broadcastParticipants(io, roomCode);
   }
@@ -99,7 +104,7 @@ app.prepare().then(() => {
         return;
       }
 
-      const { roomCode, name } = parsedPayload.data;
+      const { roomCode, name, clientId } = parsedPayload.data;
       const existingRoom = await prisma.room.findUnique({
         where: { code: roomCode },
         select: { id: true },
@@ -114,7 +119,8 @@ app.prepare().then(() => {
       socket.data.roomCode = roomCode;
       socket.data.name = name;
       socket.join(roomCode);
-      getRoom(roomCode).set(socket.id, { id: socket.id, name });
+      getRoom(roomCode).set(socket.id, { id: socket.id, clientId, name });
+      socket.emit("chat-history", roomMessages.get(roomCode) || []);
       broadcastParticipants(io, roomCode);
     });
 
@@ -129,7 +135,7 @@ app.prepare().then(() => {
         return;
       }
 
-      const { roomCode, message, senderName } = parsedPayload.data;
+      const { roomCode, message, senderName, senderClientId } = parsedPayload.data;
       if (socket.data.roomCode !== roomCode) {
         emitRoomError(socket, "Join this room before sending messages.");
         return;
@@ -140,14 +146,19 @@ app.prepare().then(() => {
         return;
       }
 
-      io.to(roomCode).emit("chat-message", {
+      const chatMessage = {
         id: randomUUID(),
         roomCode,
         senderId: socket.id,
+        senderClientId,
         senderName,
         message,
         timestamp: new Date().toISOString(),
-      });
+      };
+      const messages = [...(roomMessages.get(roomCode) || []), chatMessage].slice(-maxRoomMessages);
+      roomMessages.set(roomCode, messages);
+
+      io.to(roomCode).emit("chat-message", chatMessage);
     });
 
     for (const eventName of ["play", "pause", "seek"]) {

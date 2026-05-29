@@ -1,7 +1,8 @@
 "use client";
 
 import { FormEvent, useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { Check, Copy, LinkIcon, Minus, Pause, Play, Plus, Send, SkipForward, UserPen, UsersRound } from "lucide-react";
+import { Check, Copy, LinkIcon, LogOut, Minus, Pause, Play, Plus, Send, SkipForward, UserPen, UsersRound } from "lucide-react";
+import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/Button";
 import { TextInput } from "@/components/ui/TextInput";
 import { useRoomSocket } from "@/lib/hooks/useRoomSocket";
@@ -31,6 +32,7 @@ export function RoomClient({
     videoTitle: string | null;
   };
 }) {
+  const router = useRouter();
   const room = useRoomSocket(roomCode, initialSource);
   const videoRef = useRef<HTMLVideoElement>(null);
   const isApplyingRemotePlayback = useRef(false);
@@ -95,6 +97,11 @@ export function RoomClient({
     await navigator.clipboard?.writeText(shareUrl);
     setCopyState("copied");
     window.setTimeout(() => setCopyState("idle"), 1800);
+  }
+
+  function leaveRoom() {
+    room.leaveRoom();
+    router.push("/");
   }
 
   async function saveVideoSource(event: FormEvent<HTMLFormElement>) {
@@ -186,6 +193,10 @@ export function RoomClient({
             >
               {copyState === "copied" ? <Check className="h-4 w-4" aria-hidden /> : <Copy className="h-4 w-4" aria-hidden />}
               {copyState === "copied" ? "Copied" : "Copy link"}
+            </Button>
+            <Button type="button" variant="danger" onClick={leaveRoom}>
+              <LogOut className="h-4 w-4" aria-hidden />
+              Leave
             </Button>
           </div>
           {room.error ? (
@@ -331,7 +342,7 @@ export function RoomClient({
               <p className="m-auto text-sm text-slate-500">No messages yet.</p>
             ) : (
               room.messages.map((chat) => {
-                const isMine = chat.senderId === room.socketId;
+                const isMine = chat.senderClientId === room.clientId;
 
                 return (
                   <article
@@ -414,10 +425,10 @@ export function RoomClient({
               className="flex items-center justify-between rounded-md border border-line bg-mist px-3 py-2"
             >
               <span className="font-medium text-ink">
-                {participant.id === room.socketId ? `${participant.name} (You)` : participant.name}
+                {participant.clientId === room.clientId ? `${participant.name} (You)` : participant.name}
               </span>
               <span className="flex items-center gap-2">
-                {participant.id === room.socketId ? (
+                {participant.clientId === room.clientId ? (
                   <span className="rounded-full bg-fern px-2 py-0.5 text-xs font-semibold text-white">Me</span>
                 ) : null}
                 <span className="h-2.5 w-2.5 rounded-full bg-fern" aria-label="Online" />

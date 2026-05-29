@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
-import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
+import { getServerSession } from "@/lib/session";
 import { createRoomCode } from "@/lib/utils";
 
 async function createUniqueRoomCode() {
@@ -20,9 +20,7 @@ async function createUniqueRoomCode() {
 }
 
 export async function POST(request: Request) {
-  const session = await auth.api.getSession({
-    headers: request.headers,
-  });
+  const session = await getServerSession(request.headers);
 
   if (!session?.user) {
     return NextResponse.json({ message: "Please sign in before creating a room." }, { status: 401 });

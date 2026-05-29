@@ -17,6 +17,9 @@ MVP skeleton sudah berjalan secara lokal.
 - [x] Room presence in memory
 - [x] Realtime chat in memory
 - [x] Playback sync events: play, pause, seek
+- [x] Shared in-room HTML5 video player
+- [x] Realtime video source sync
+- [x] Rename participant display name
 - [x] Prisma schema for `User`, `Room`, and Better Auth models
 - [x] Better Auth email/password route handler
 - [x] Better Auth database migration applied
@@ -29,6 +32,7 @@ MVP skeleton sudah berjalan secara lokal.
 - Auth UI sudah terhubung ke Better Auth untuk register, login, session check, dan logout.
 - Room creation sudah lewat API, membutuhkan login, dan tersimpan ke database.
 - Presence, chat, dan playback state masih in-memory di Socket.IO server.
+- Video source room disimpan di database, tapi file/video tetap berasal dari URL eksternal yang browser boleh putar.
 - In-memory realtime state sudah sesuai MVP principle, tapi akan reset saat server restart.
 - Aplikasi memakai custom `server.js` supaya Socket.IO bisa berjalan bersama Next.js.
 - Migration `20260529035800_add_better_auth_models` sudah diterapkan ke database Neon.
@@ -43,9 +47,9 @@ MVP skeleton sudah berjalan secara lokal.
 - [x] Hubungkan sign-in form ke Better Auth
 - [x] Tambahkan logout action
 - [x] Tambahkan session check di navbar
-- [ ] Tambahkan server-side session helper
-- [ ] Protect room creation untuk user yang login
-- [ ] Redirect user yang belum login jika diperlukan
+- [x] Tambahkan server-side session helper
+- [x] Protect room creation untuk user yang login
+- [x] Redirect user yang belum login jika diperlukan
 
 Acceptance criteria:
 
@@ -86,6 +90,9 @@ Acceptance criteria:
 
 ### 4. Playback UX
 
+- [x] Tambahkan shared in-room video player
+- [x] Tambahkan video source URL per room
+- [x] Sinkronkan video source realtime ke peserta lain
 - [x] Tambahkan current time input yang lebih nyaman
 - [x] Tambahkan slider seek
 - [x] Tampilkan status event terakhir
@@ -101,7 +108,7 @@ Acceptance criteria:
 ### 5. UI Polish
 
 - [x] Rapikan mobile layout room page
-- [ ] Tambahkan loading states
+- [x] Tambahkan loading states
 - [x] Tambahkan disabled states
 - [x] Tambahkan copy link success feedback
 - [x] Tambahkan not-found room page
@@ -126,8 +133,15 @@ Acceptance criteria:
 - [x] Play tersinkron
 - [x] Pause tersinkron
 - [x] Seek tersinkron
+- [x] Video player tersedia di website room
+- [x] Video source tersinkron realtime
 - [x] Basic validation dan error state tersedia
-- [ ] MVP tested manual dengan dua browser
+- [x] MVP tested manual dengan dua browser
+
+Manual test notes:
+
+- Two-browser room test passed.
+- Realtime chat works across browsers.
 
 ## Recommended Implementation Order
 

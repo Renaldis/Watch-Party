@@ -9,9 +9,27 @@ export type PlaybackState = {
   updatedBy: string;
 };
 
-export function useRoomSocket(roomCode: string) {
+export type VideoSource = {
+  videoUrl: string;
+  videoTitle: string | null;
+  updatedBy: string;
+};
+
+export function useRoomSocket(
+  roomCode: string,
+  initialSource?: {
+    videoUrl: string | null;
+    videoTitle: string | null;
+  }
+) {
   const socket = useMemo(() => getSocket(), []);
-  const [name] = useState(() => `Guest ${Math.floor(100 + Math.random() * 900)}`);
+  const [name, setName] = useState(() => {
+    if (typeof window === "undefined") {
+      return `Guest ${Math.floor(100 + Math.random() * 900)}`;
+    }
+
+    return window.localStorage.getItem("watchparty-display-name") || `Guest ${Math.floor(100 + Math.random() * 900)}`;
+  });
   const [participants, setParticipants] = useState<Participant[]>([]);
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [error, setError] = useState("");
@@ -21,6 +39,15 @@ export function useRoomSocket(roomCode: string) {
     currentTime: 0,
     updatedBy: "system",
   });
+  const [videoSource, setVideoSource] = useState<VideoSource | null>(() =>
+    initialSource?.videoUrl
+      ? {
+          videoUrl: initialSource.videoUrl,
+          videoTitle: initialSource.videoTitle,
+          updatedBy: "room",
+        }
+      : null
+  );
 
   useEffect(() => {
     socket.connect();
@@ -56,6 +83,16 @@ export function useRoomSocket(roomCode: string) {
         updatedBy: payload.senderName,
       }));
     });
+    socket.on(
+      "video-source",
+      (payload: { videoUrl: string; videoTitle: string | null; senderName: string }) => {
+        setVideoSource({
+          videoUrl: payload.videoUrl,
+          videoTitle: payload.videoTitle,
+          updatedBy: payload.senderName,
+        });
+      }
+    );
 
     return () => {
       socket.emit("leave-room", { roomCode });
@@ -67,18 +104,33 @@ export function useRoomSocket(roomCode: string) {
       socket.off("play");
       socket.off("pause");
       socket.off("seek");
+      socket.off("video-source");
     };
   }, [name, roomCode, socket]);
 
   return {
+    socketId: socket.id,
     name,
     participants,
     messages,
     error,
     isConnected,
     playback,
+    videoSource,
+    updateName(nextName: string) {
+      const cleanName = nextName.trim().slice(0, 40);
+      if (!cleanName) return;
+
+      window.localStorage.setItem("watchparty-display-name", cleanName);
+      setName(cleanName);
+      socket.emit("join-room", { roomCode, name: cleanName });
+    },
     sendMessage(message: string) {
       socket.emit("chat-message", { roomCode, message, senderName: name });
+    },
+    setVideoSource(videoUrl: string, videoTitle: string | null) {
+      socket.emit("video-source", { roomCode, videoUrl, videoTitle, senderName: name });
+      setVideoSource({ videoUrl, videoTitle, updatedBy: name });
     },
     play(currentTime: number) {
       socket.emit("play", { roomCode, currentTime, senderName: name });

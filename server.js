@@ -30,6 +30,12 @@ const playbackSchema = z.object({
   currentTime: z.coerce.number().min(0).max(60 * 60 * 24),
   senderName: z.string().trim().min(1).max(40).default("Guest"),
 });
+const videoSourceSchema = z.object({
+  roomCode: roomCodeSchema,
+  videoUrl: z.string().trim().url().max(2000),
+  videoTitle: z.string().trim().max(120).optional().nullable(),
+  senderName: z.string().trim().min(1).max(40).default("Guest"),
+});
 
 function getRoom(roomCode) {
   if (!rooms.has(roomCode)) {
@@ -165,6 +171,27 @@ app.prepare().then(() => {
         });
       });
     }
+
+    socket.on("video-source", (payload) => {
+      const parsedPayload = videoSourceSchema.safeParse(payload);
+      if (!parsedPayload.success) {
+        emitRoomError(socket, "Video source is invalid.");
+        return;
+      }
+
+      const { roomCode, videoUrl, videoTitle, senderName } = parsedPayload.data;
+      if (socket.data.roomCode !== roomCode) {
+        emitRoomError(socket, "Join this room before changing the video source.");
+        return;
+      }
+
+      socket.to(roomCode).emit("video-source", {
+        roomCode,
+        videoUrl,
+        videoTitle: videoTitle || null,
+        senderName,
+      });
+    });
 
     socket.on("disconnect", () => {
       removeParticipant(io, socket);

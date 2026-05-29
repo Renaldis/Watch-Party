@@ -11,8 +11,19 @@ pnpm dev
 
 Open `http://localhost:3000`, create a room, then open the copied room link in another browser to test realtime sync.
 
+## MVP status
+
+- Email/password auth is wired with Better Auth.
+- Rooms are created through the API and stored in PostgreSQL.
+- Room URLs are validated against the database.
+- Rooms include a shared in-page HTML5 video player for direct video URLs.
+- Participants can rename their local display name in the room sidebar.
+- Presence, chat, video source, play, pause, and seek sync work over Socket.IO.
+- Manual two-browser testing passed for room join and realtime chat.
+
 ## Notes
 
 - Socket.IO state is in memory and intentionally not stored in PostgreSQL.
-- Prisma models match `PLAN.md` for `User` and `Room`.
-- Auth screens are scaffolded; connect Better Auth endpoints before treating login/register as complete.
+- Prisma models include app rooms and Better Auth tables.
+- Realtime state resets when the custom Next.js server restarts.
+- The in-page player needs a direct browser-playable video URL, such as an allowed `.mp4` URL. Normal streaming site pages are not embedded or re-streamed by this app.

@@ -36,7 +36,13 @@ export default async function RoomPage({ params }: { params: Promise<{ code: str
       <div className="mx-auto mb-4 w-full max-w-7xl text-sm text-slate-600">
         Hosted by <span className="font-semibold text-ink">{room.owner.name}</span>
       </div>
-      <RoomClient roomCode={roomCode} />
+      <RoomClient
+        roomCode={roomCode}
+        initialSource={{
+          videoUrl: room.videoUrl,
+          videoTitle: room.videoTitle,
+        }}
+      />
     </main>
   );
 }

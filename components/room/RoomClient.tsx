@@ -76,6 +76,8 @@ export function RoomClient({
   const displayTime = formatTimestamp(time);
   const displayDuration = formatTimestamp(duration);
   const canControlPlayback = room.isConnected && (Boolean(room.videoSource?.videoUrl) || Boolean(providerStatus?.detected));
+  const isPlaybackPlaying = providerStatus?.detected ? providerStatus.paused === false : room.playback.status === "playing";
+  const isPlaybackPaused = providerStatus?.detected ? providerStatus.paused === true : room.playback.status === "paused";
 
   useEffect(() => {
     const timeout = window.setTimeout(() => setDisplayName(room.name), 0);
@@ -107,20 +109,45 @@ export function RoomClient({
     };
   }, []);
 
-  const updateTime = useCallback(
+  const clampTime = useCallback(
     (nextTime: number) => {
-      setTime(Math.min(duration, Math.max(0, Math.round(nextTime))));
+      return Math.min(duration, Math.max(0, Math.round(nextTime)));
     },
     [duration]
   );
+  const updateTime = useCallback(
+    (nextTime: number) => {
+      setTime(clampTime(nextTime));
+    },
+    [clampTime]
+  );
 
   useEffect(() => {
+    if (providerStatus?.detected && room.playback.status === "idle") return;
+
     const timeout = window.setTimeout(() => updateTime(room.playback.currentTime), 0);
     return () => window.clearTimeout(timeout);
-  }, [room.playback.currentTime, updateTime]);
+  }, [providerStatus?.detected, room.playback.currentTime, room.playback.status, updateTime]);
+
+  useEffect(() => {
+    if (room.videoSource?.videoUrl || !providerStatus?.detected) return;
+
+    const timeout = window.setTimeout(() => {
+      if (Number.isFinite(providerStatus.duration) && providerStatus.duration && providerStatus.duration > 0) {
+        setDuration(Math.max(1, Math.round(providerStatus.duration)));
+      }
+
+      if (Number.isFinite(providerStatus.currentTime) && providerStatus.currentTime !== null) {
+        updateTime(providerStatus.currentTime);
+      }
+    }, 0);
+
+    return () => window.clearTimeout(timeout);
+  }, [providerStatus, room.videoSource?.videoUrl, updateTime]);
 
   useEffect(() => {
     if (room.playback.updatedBy === room.name) return;
+    if (room.playback.status === "idle") return;
 
     if (room.playback.status === "playing") {
       sendProviderCommand("play", room.playback.currentTime);
@@ -224,13 +251,20 @@ export function RoomClient({
   }
 
   function seekVideo() {
+    syncSeek(time);
+  }
+
+  function syncSeek(nextTime: number) {
+    const syncedTime = clampTime(nextTime);
     const video = videoRef.current;
+
     if (video) {
-      video.currentTime = time;
+      video.currentTime = syncedTime;
     }
 
-    sendProviderCommand("seek", time);
-    room.seek(time);
+    setTime(syncedTime);
+    sendProviderCommand("seek", syncedTime);
+    room.seek(syncedTime);
   }
 
   return (
@@ -363,7 +397,7 @@ export function RoomClient({
                 <p className="mt-1 text-2xl font-semibold tabular-nums text-ink">{displayTime}</p>
               </div>
               <div className="grid grid-cols-3 gap-2">
-                <Button type="button" variant="secondary" onClick={() => updateTime(time - 10)}>
+                <Button type="button" variant="secondary" onClick={() => syncSeek(time - 10)} disabled={!canControlPlayback}>
                   <Minus className="h-4 w-4" aria-hidden />
                   10s
                 </Button>
@@ -373,10 +407,11 @@ export function RoomClient({
                   min={0}
                   max={duration}
                   value={time}
-                  onChange={(event) => updateTime(Number(event.target.value))}
+                  disabled={!canControlPlayback}
+                  onChange={(event) => syncSeek(Number(event.target.value))}
                   className="text-center tabular-nums"
                 />
-                <Button type="button" variant="secondary" onClick={() => updateTime(time + 10)}>
+                <Button type="button" variant="secondary" onClick={() => syncSeek(time + 10)} disabled={!canControlPlayback}>
                   <Plus className="h-4 w-4" aria-hidden />
                   10s
                 </Button>
@@ -389,7 +424,8 @@ export function RoomClient({
               max={duration}
               step={1}
               value={time}
-              onChange={(event) => updateTime(Number(event.target.value))}
+              disabled={!canControlPlayback}
+              onChange={(event) => syncSeek(Number(event.target.value))}
               className="mt-4 h-2 w-full cursor-pointer accent-fern"
             />
             <div className="mt-2 flex justify-between text-xs font-medium text-slate-500">
@@ -399,11 +435,11 @@ export function RoomClient({
           </div>
 
           <div className="mt-5 grid gap-3 md:grid-cols-[1fr_1fr_1fr]">
-            <Button type="button" onClick={playVideo} disabled={!canControlPlayback}>
+            <Button type="button" onClick={playVideo} disabled={!canControlPlayback || isPlaybackPlaying}>
               <Play className="h-4 w-4" aria-hidden />
               Play
             </Button>
-            <Button type="button" variant="secondary" onClick={pauseVideo} disabled={!canControlPlayback}>
+            <Button type="button" variant="secondary" onClick={pauseVideo} disabled={!canControlPlayback || isPlaybackPaused}>
               <Pause className="h-4 w-4" aria-hidden />
               Pause
             </Button>

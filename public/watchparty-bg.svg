@@ -1,0 +1,12 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1400 900" role="img" aria-label="Soft cinema room background">
+  <rect width="1400" height="900" fill="#f5f7fb"/>
+  <path d="M0 640c180-44 312-58 476-27 170 33 270 118 468 84 178-30 300-142 456-104v307H0z" fill="#e4edf1"/>
+  <rect x="140" y="96" width="1120" height="530" rx="28" fill="#20252b"/>
+  <rect x="182" y="138" width="1036" height="448" rx="18" fill="#33404a"/>
+  <path d="M182 138h1036v95H182z" fill="#16785f"/>
+  <circle cx="245" cy="188" r="20" fill="#df624d"/>
+  <circle cx="305" cy="188" r="20" fill="#d59d2b"/>
+  <circle cx="365" cy="188" r="20" fill="#f5f7fb"/>
+  <path d="M608 326l164 94-164 94z" fill="#f5f7fb"/>
+  <rect x="260" y="710" width="880" height="42" rx="21" fill="#15171a" opacity=".13"/>
+</svg>
